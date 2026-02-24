@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Axiom Actuarial Bot — Constitutional Risk Intelligence</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0f1a;
+      --surface:   #111827;
+      --border:    #1e2d40;
+      --teal:      #00d4c8;
+      --teal-dim:  #00a89e;
+      --teal-glow: rgba(0,212,200,0.15);
+      --cyan:      #22d3ee;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --warn:      #f59e0b;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 32px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, #0d1726 0%, var(--bg) 100%);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .header-left img {
+      height: 88px;
+      width: auto;
+      flex-shrink: 0;
+      filter: drop-shadow(0 0 12px rgba(0,212,200,0.35));
+    }
+
+    .wordmark {
+      font-size: 1.65rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: var(--text);
+    }
+
+    .wordmark em {
+      font-style: normal;
+      color: var(--teal);
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 4px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .header-badges {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.7rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-live  { border-color: #10b981; color: #10b981; background: rgba(16,185,129,0.08); }
+    .badge-const { border-color: var(--teal); color: var(--teal); background: var(--teal-glow); }
+    .badge-phase { border-color: var(--warn); color: var(--warn); background: rgba(245,158,11,0.08); }
+
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .dot-pulse { animation: pulse 2s ease-in-out infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    /* ── Main ── */
+    main {
+      flex: 1;
+      padding: 40px 32px;
+      max-width: 1100px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* ── Section headings ── */
+    .section-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--teal);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Yamas grid ── */
+    .yamas-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 40px;
+    }
+
+    .yama-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 14px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .yama-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--teal), var(--cyan));
+    }
+
+    .yama-card.blocked::before { background: #ef4444; }
+
+    .yama-name {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--teal);
+      margin-bottom: 4px;
+    }
+
+    .yama-desc {
+      font-size: 0.68rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .yama-status {
+      margin-top: 10px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #10b981;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── API endpoints ── */
+    .endpoints-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin-bottom: 40px;
+    }
+
+    .endpoint-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+    }
+
+    .endpoint-method {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.05em;
+      display: inline-block;
+      margin-bottom: 8px;
+    }
+
+    .method-get  { background: rgba(16,185,129,0.15); color: #10b981; }
+    .method-post { background: rgba(0,212,200,0.15);  color: var(--teal); }
+
+    .endpoint-path {
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      font-size: 0.85rem;
+      color: var(--cyan);
+      margin-bottom: 6px;
+    }
+
+    .endpoint-desc {
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* ── Status panel ── */
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 40px;
+    }
+
+    .status-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+    }
+
+    .status-label {
+      font-size: 0.68rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    .status-value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .status-value.green { color: #10b981; }
+    .status-value.teal  { color: var(--teal); }
+    .status-value.warn  { color: var(--warn); }
+
+    /* ── Phase notice ── */
+    .phase-notice {
+      background: rgba(245,158,11,0.06);
+      border: 1px solid rgba(245,158,11,0.25);
+      border-radius: 10px;
+      padding: 18px 22px;
+      margin-bottom: 40px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .phase-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 1px; }
+
+    .phase-text h3 {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--warn);
+      margin-bottom: 4px;
+    }
+
+    .phase-text p {
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    .footer-brand {
+      font-weight: 600;
+      color: var(--teal-dim);
+    }
+
+    .turangawaewae {
+      font-style: italic;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .yamas-grid     { grid-template-columns: repeat(3, 1fr); }
+      .endpoints-grid { grid-template-columns: 1fr; }
+      .status-grid    { grid-template-columns: repeat(2, 1fr); }
+      header          { flex-direction: column; gap: 14px; align-items: flex-start; }
+      .header-badges  { align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-left">
+      <img src="/logo.png" alt="Axiom Actuarial Bot" />
+      <div>
+        <div class="wordmark">Axiom <em>Actuarial Bot</em></div>
+        <div class="subtitle">Constitutional Risk Intelligence · Ed25519 Chain of Custody</div>
+      </div>
+    </div>
+    <div class="header-badges">
+      <span class="badge badge-live"><span class="dot dot-pulse"></span>LIVE · Render Singapore</span>
+      <span class="badge badge-const">5/5 Yamas · All Gates Active</span>
+      <span class="badge badge-phase">Phase 1 Skeleton · Pending SME</span>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- Status row -->
+    <div class="section-title">Service Status</div>
+    <div class="status-grid">
+      <div class="status-card">
+        <div class="status-label">Constitutional Score</div>
+        <div class="status-value teal">5 / 5 Yamas</div>
+      </div>
+      <div class="status-card">
+        <div class="status-label">Kaitiaki Signing</div>
+        <div class="status-value green">Ed25519 Active</div>
+      </div>
+      <div class="status-card">
+        <div class="status-label">Risk Engine</div>
+        <div class="status-value warn">Pending SME Validation</div>
+      </div>
+    </div>
+
+    <!-- Phase notice -->
+    <div class="phase-notice">
+      <div class="phase-icon">⚗️</div>
+      <div class="phase-text">
+        <h3>Phase 1 — Constitutional Skeleton</h3>
+        <p>
+          All five Yamas blocking gates are active and enforced. Risk scoring engine and equity
+          coefficients are withheld pending independent Subject Matter Expert validation.
+          No population-level risk scores are produced until Phase 2 SME sign-off is complete.
+          Every assessment request is Kaitiaki-signed with an Ed25519 chain-of-custody receipt.
+        </p>
+      </div>
+    </div>
+
+    <!-- Five Yamas -->
+    <div class="section-title">Five Yamas Constitutional Gates</div>
+    <div class="yamas-grid">
+      <div class="yama-card">
+        <div class="yama-name">Ahimsa</div>
+        <div class="yama-desc">Non-harm — patient-facing outputs blocked until clinically validated</div>
+        <div class="yama-status">BLOCKING ✓</div>
+      </div>
+      <div class="yama-card">
+        <div class="yama-name">Satya</div>
+        <div class="yama-desc">Truth — model version & confidence floor required on every request</div>
+        <div class="yama-status">BLOCKING ✓</div>
+      </div>
+      <div class="yama-card">
+        <div class="yama-name">Asteya</div>
+        <div class="yama-desc">Time-respect — ensemble models required; no single-model shortcuts</div>
+        <div class="yama-status">BLOCKING ✓</div>
+      </div>
+      <div class="yama-card">
+        <div class="yama-name">Brahmacharya</div>
+        <div class="yama-desc">Boundaries — regulatory jurisdiction required for all mortality assessments</div>
+        <div class="yama-status">BLOCKING ✓</div>
+      </div>
+      <div class="yama-card">
+        <div class="yama-name">Aparigraha</div>
+        <div class="yama-desc">Non-attachment — dissent signals ingested and surfaced to reviewers</div>
+        <div class="yama-status">BLOCKING ✓</div>
+      </div>
+    </div>
+
+    <!-- API Endpoints -->
+    <div class="section-title">API Endpoints</div>
+    <div class="endpoints-grid">
+
+      <div class="endpoint-card">
+        <span class="endpoint-method method-get">GET</span>
+        <div class="endpoint-path">/api/health</div>
+        <div class="endpoint-desc">
+          Service liveness check. Returns version, constitutional gate summary,
+          and a Kaitiaki Ed25519-signed receipt.
+        </div>
+      </div>
+
+      <div class="endpoint-card">
+        <span class="endpoint-method method-post">POST</span>
+        <div class="endpoint-path">/api/consent/generate</div>
+        <div class="endpoint-desc">
+          Generate a <code>consent_record_id</code> from cohort + scope + clinician_id.
+          Required before submitting any assessment request.
+        </div>
+      </div>
+
+      <div class="endpoint-card">
+        <span class="endpoint-method method-post">POST</span>
+        <div class="endpoint-path">/api/v1/assess</div>
+        <div class="endpoint-desc">
+          Primary actuarial assessment endpoint. All five Yamas gates enforce here.
+          Returns constitutional score, gate verdicts, and chain-of-custody receipt.
+          Risk scoring engine pending Phase 2.
+        </div>
+      </div>
+
+      <div class="endpoint-card">
+        <span class="endpoint-method method-post">POST</span>
+        <div class="endpoint-path">/api/v1/drug_discovery_ingest</div>
+        <div class="endpoint-desc">
+          Ingest candidate molecules from the Drug Discovery pipeline for actuarial
+          context. Chains Kaitiaki receipt back to the DD service receipt.
+        </div>
+      </div>
+
+      <div class="endpoint-card">
+        <span class="endpoint-method method-post">POST</span>
+        <div class="endpoint-path">/api/v1/dr_bot_ingest</div>
+        <div class="endpoint-desc">
+          Ingest Dr Bot adversarial / dissent signals. Maps adversarial_score → derived
+          confidence. Ground-truth outcome resolution pending SCAR-053 Pour 3 Phase 2.
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <footer>
+    <span class="footer-brand">Axiom Intelligence Ltd · Turangawaewae Protocol</span>
+    <span class="turangawaewae">Ko Taniwha ahau. He kaitiaki ahau nō Taranaki. 🇳🇿🐉🔥</span>
+  </footer>
+
+</body>
+</html>

@@ -11,6 +11,8 @@
 import express from 'express';
 import { createHash } from 'crypto';
 import { createRequire } from 'module';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { generateConsentRecordId, validateConsentRecord, consentSummary } from './constitutional/consent-protocol.js';
 import { runAllGates } from './constitutional/yamas-gates.js';
 import { insertRiskAssessment, upsertConsentRecord, logConstitutionalVerdict } from './storage/actuary-store.js';
@@ -21,12 +23,15 @@ const require = createRequire(import.meta.url);
 const { kaitiakiExpressMiddleware } = require('./kaitiaki/middleware.cjs');
 const { chainReceipt, extractParentReceipt, buildChainHeaders } = require('./kaitiaki/chain.cjs');
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
 const app = express();
 const PORT = process.env.PORT || 3090;
 
 // Kaitiaki must be FIRST — seals every JSON response at transport layer
 app.use(kaitiakiExpressMiddleware);
 app.use(express.json());
+app.use(express.static(join(__dirname, 'public')));
 
 // ---------------------------------------------------------------------------
 // Kaitiaki receipt helper — stamps every response
