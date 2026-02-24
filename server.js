@@ -18,8 +18,8 @@ import { insertRiskAssessment, upsertConsentRecord, logConstitutionalVerdict } f
 // Ed25519 Kaitiaki transport middleware — replaces SHA-256 receipt helper
 // CJS module imported via createRequire (ESM ↔ CJS bridge)
 const require = createRequire(import.meta.url);
-const { kaitiakiExpressMiddleware } = require('./kaitiaki/middleware.js');
-const { chainReceipt, extractParentReceipt, buildChainHeaders } = require('./kaitiaki/chain.js');
+const { kaitiakiExpressMiddleware } = require('./kaitiaki/middleware.cjs');
+const { chainReceipt, extractParentReceipt, buildChainHeaders } = require('./kaitiaki/chain.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 3090;
