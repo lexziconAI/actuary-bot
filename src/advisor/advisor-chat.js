@@ -76,7 +76,8 @@ RULES:
 3. Keep responses to 2-3 sentences max.
 4. If all required fields are set, offer to generate consent.
 5. If consent is generated and gates pass, recommend submitting.
-6. End each response with: <HINT>next most important thing</HINT>`;
+6. End each response with: <HINT>next most important thing</HINT>
+7. NEVER use markdown formatting. No asterisks, no hashes, no bullet points, no bold, no italics. Plain conversational sentences only.`;
 }
 
 function scoreCompleteness(acc) {

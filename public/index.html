@@ -735,11 +735,21 @@
       }
     }
 
+    function stripMarkdown(text) {
+      return text
+        .replace(/\*\*(.+?)\*\*/g, '$1')
+        .replace(/\*(.+?)\*/g, '$1')
+        .replace(/#{1,6}\s+/g, '')
+        .replace(/`([^`]+)`/g, '$1')
+        .replace(/^\s*[-*]\s+/gm, '')
+        .trim();
+    }
+
     function addMessage(role, content) {
       const area = document.getElementById('chatMessages');
       const div = document.createElement('div');
       div.className = 'msg ' + role;
-      div.textContent = content;
+      div.textContent = role === 'advisor' ? stripMarkdown(content) : content;
       area.appendChild(div);
       area.scrollTop = area.scrollHeight;
     }
