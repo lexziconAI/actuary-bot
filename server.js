@@ -10,16 +10,20 @@
 
 import express from 'express';
 import { createHash } from 'crypto';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { generateConsentRecordId, validateConsentRecord, consentSummary } from './constitutional/consent-protocol.js';
 import { runAllGates } from './constitutional/yamas-gates.js';
 import { insertRiskAssessment, upsertConsentRecord, logConstitutionalVerdict } from './storage/actuary-store.js';
 import { handleAdvisorTurn, handleConsentGeneration, clearSession } from './src/advisor/advisor-chat.js';
 import { explainGates } from './src/advisor/gate-explainer.js';
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3090;
 
 app.use(express.json());
+app.use(express.static(join(__dirname, 'public')));
 
 // ---------------------------------------------------------------------------
 // Kaitiaki receipt helper — stamps every response
