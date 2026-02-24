@@ -10,7 +10,7 @@ async function callCerebras(messages, options = {}) {
   }
 
   const body = {
-    model: options.model || 'llama-3.3-70b',
+    model: options.model || 'llama3.1-8b',
     messages,
     temperature: options.temperature ?? 0.5,
     max_tokens: options.max_tokens ?? 800,
