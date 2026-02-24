@@ -1,0 +1,31 @@
+# render.yaml — Axiom Actuary Bot (standalone repo)
+# Repo: https://github.com/lexziconAI/actuary-bot
+#
+# DEPLOYMENT NOTES:
+# - Region: Singapore (closest to NZ)
+# - SQLite: ephemeral on free plan
+# - kaitiaki bundled locally in ./kaitiaki/ (self-contained)
+#
+# ENV VARS to set in Render dashboard:
+#   PORT (set automatically by Render)
+#   DRUG_DISCOVERY_URL — https://axiom-drug-discovery.onrender.com
+#   DR_BOT_URL — https://drbot.axiomintelligence.co.nz
+#
+# EQUITY ENGINE NOTE:
+#   SME_CLEARANCE=false (hard-coded) — equity coefficients will not activate
+#   until Te Whatu Ora + Māori/Pacific health equity SME sign-off
+
+services:
+  - type: web
+    name: axiom-actuary-bot
+    runtime: node
+    region: singapore
+    plan: free
+    repo: https://github.com/lexziconAI/actuary-bot
+    branch: main
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+    autoDeploy: true
