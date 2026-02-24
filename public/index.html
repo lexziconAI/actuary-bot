@@ -310,6 +310,99 @@
       header          { flex-direction: column; gap: 14px; align-items: flex-start; }
       .header-badges  { align-items: flex-start; }
     }
+
+    /* ── Advisor Panel ── */
+    .advisor-wrap {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin: 0 0 2.5rem;
+    }
+    .chat-panel, .sim-panel {
+      background: #111827;
+      border: 1px solid #1e2d40;
+      border-radius: 10px;
+      padding: 1.25rem;
+    }
+    .chat-messages {
+      height: 320px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .msg { max-width: 88%; padding: 0.6rem 0.9rem; border-radius: 10px; font-size: 0.88rem; line-height: 1.5; }
+    .msg.user    { background: #1a3a5c; align-self: flex-end; }
+    .msg.advisor { background: #1a2a1a; align-self: flex-start; }
+    .msg.system  { background: #2a1a2a; align-self: center; font-style: italic; font-size: 0.82rem; }
+    .chat-input-row { display: flex; gap: 0.5rem; }
+    .chat-input-row input {
+      flex: 1; background: #0d1726; border: 1px solid #1e2d40; color: #e2e8f0;
+      border-radius: 6px; padding: 0.6rem 0.8rem; font-size: 0.9rem;
+    }
+    .chat-input-row button, .btn-consent, .btn-submit {
+      background: #1e4a8a; color: #fff; border: none; border-radius: 6px;
+      padding: 0.6rem 1rem; cursor: pointer; font-size: 0.9rem; white-space: nowrap;
+    }
+    .btn-consent { background: #1a4a2a; margin-top: 0.75rem; width: 100%; }
+    .btn-submit  { background: #1e4a8a; margin-top: 0.5rem; width: 100%; }
+    .btn-submit.ready { background: #1a6a3a; }
+    .btn-submit:disabled { background: #1e2d40; color: #64748b; cursor: default; }
+
+    .progress-bar-wrap { margin: 0.75rem 0 0; }
+    .progress-label { font-size: 0.8rem; color: #64748b; margin-bottom: 0.3rem; }
+    .progress-bar  { height: 6px; background: #1e2d40; border-radius: 3px; }
+    .progress-fill { height: 100%; border-radius: 3px; background: #00d4c8; transition: width 0.3s; }
+
+    .gate-bar-section { margin: 0 0 1rem; }
+    .gate-row { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.6rem; }
+    .gate-label  { width: 100px; font-size: 0.82rem; color: #94a3b8; }
+    .gate-track  { flex: 1; height: 8px; background: #1e2d40; border-radius: 4px; }
+    .gate-fill   { height: 100%; border-radius: 4px; transition: width 0.4s, background 0.4s; }
+    .gate-fill.pass     { background: #10b981; }
+    .gate-fill.block    { background: #ef4444; }
+    .gate-fill.marginal { background: #f59e0b; }
+    .gate-score  { width: 36px; text-align: right; font-size: 0.82rem; color: #64748b; }
+    .gate-icon   { font-size: 0.9rem; }
+
+    .composite-score { text-align: center; padding: 0.6rem; border: 1px solid #1e2d40; border-radius: 6px; margin-bottom: 1rem; }
+    .composite-score .score-num { font-size: 1.5rem; font-weight: bold; }
+    .composite-score .score-num.pass  { color: #10b981; }
+    .composite-score .score-num.block { color: #ef4444; }
+
+    .explanation-list { font-size: 0.82rem; color: #94a3b8; margin: 0.5rem 0 1rem; }
+    .explanation-list li { margin-bottom: 0.4rem; }
+
+    .spec-panel {
+      background: #111827; border: 1px solid #1e2d40; border-radius: 10px;
+      padding: 1.25rem; margin-bottom: 1.5rem;
+    }
+    .spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1rem; }
+    .spec-field label { font-size: 0.78rem; color: #64748b; display: block; margin-bottom: 0.2rem; }
+    .spec-field input, .spec-field select {
+      width: 100%; background: #0d1726; border: 1px solid #1e2d40; color: #e2e8f0;
+      border-radius: 4px; padding: 0.35rem 0.5rem; font-size: 0.82rem; box-sizing: border-box;
+    }
+    .spec-field input.filled { border-color: #00d4c8; }
+
+    .result-panel {
+      background: #111827; border: 1px solid #1e2d40; border-radius: 10px;
+      padding: 1.25rem; margin-bottom: 1.5rem; display: none;
+    }
+    .result-pass  { color: #10b981; }
+    .result-block { color: #ef4444; }
+
+    details summary {
+      cursor: pointer; color: #64748b; font-size: 0.9rem;
+      padding: 0.75rem 0; user-select: none;
+    }
+    details summary:hover { color: #94a3b8; }
+
+    @media (max-width: 768px) {
+      .advisor-wrap { grid-template-columns: 1fr; }
+      .spec-grid    { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -330,6 +423,154 @@
   </header>
 
   <main>
+
+    <!-- ================================================================== -->
+    <!-- ADVISOR PANEL                                                       -->
+    <!-- ================================================================== -->
+    <div style="margin-bottom:2rem">
+
+      <div class="advisor-wrap">
+        <!-- LEFT: Chat -->
+        <div class="chat-panel">
+          <div style="font-size:0.9rem;font-weight:600;color:#94a3b8;margin-bottom:0.75rem">
+            Assessment Advisor
+          </div>
+          <div class="chat-messages" id="chatMessages">
+            <div class="msg advisor">
+              Hello! I'm your Assessment Advisor. Tell me about the assessment you need to run — cohort, scope, model. I'll help you satisfy the Five Yamas gates.
+            </div>
+          </div>
+          <div class="chat-input-row">
+            <input type="text" id="chatInput" placeholder="Describe your assessment..."
+              onkeydown="if(event.key==='Enter')sendMessage()">
+            <button onclick="sendMessage()">Send</button>
+          </div>
+
+          <div class="progress-bar-wrap">
+            <div class="progress-label" id="progressLabel">Completeness: 0%</div>
+            <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+          </div>
+
+          <button class="btn-consent" id="btnConsent" onclick="generateConsent()" style="display:none">
+            Generate Consent Record
+          </button>
+          <button class="btn-submit" id="btnSubmit" onclick="submitAssessment()" disabled>
+            Submit Assessment
+          </button>
+        </div>
+
+        <!-- RIGHT: Gate simulation -->
+        <div class="sim-panel">
+          <div style="font-size:0.9rem;font-weight:600;color:#94a3b8;margin-bottom:0.75rem">
+            Live Gate Simulation
+          </div>
+
+          <div class="composite-score">
+            <div style="font-size:0.75rem;color:#64748b;margin-bottom:0.2rem">Composite Score</div>
+            <div class="score-num" id="compositeScore">—</div>
+            <div id="compositeVerdict" style="font-size:0.8rem;color:#64748b">Awaiting fields…</div>
+          </div>
+
+          <div class="gate-bar-section" id="gateBars">
+            <div class="gate-row">
+              <div class="gate-label">Ahimsa</div>
+              <div class="gate-track"><div class="gate-fill" id="gateAhimsa" style="width:0%"></div></div>
+              <div class="gate-score" id="scoreAhimsa">—</div>
+              <div class="gate-icon" id="iconAhimsa">○</div>
+            </div>
+            <div class="gate-row">
+              <div class="gate-label">Satya</div>
+              <div class="gate-track"><div class="gate-fill" id="gateSatya" style="width:0%"></div></div>
+              <div class="gate-score" id="scoreSatya">—</div>
+              <div class="gate-icon" id="iconSatya">○</div>
+            </div>
+            <div class="gate-row">
+              <div class="gate-label">Asteya</div>
+              <div class="gate-track"><div class="gate-fill" id="gateAsteya" style="width:0%"></div></div>
+              <div class="gate-score" id="scoreAsteya">—</div>
+              <div class="gate-icon" id="iconAsteya">○</div>
+            </div>
+            <div class="gate-row">
+              <div class="gate-label">Brahmacharya</div>
+              <div class="gate-track"><div class="gate-fill" id="gateBrahmacharya" style="width:0%"></div></div>
+              <div class="gate-score" id="scoreBrahmacharya">—</div>
+              <div class="gate-icon" id="iconBrahmacharya">○</div>
+            </div>
+            <div class="gate-row">
+              <div class="gate-label">Aparigraha</div>
+              <div class="gate-track"><div class="gate-fill" id="gateAparigraha" style="width:0%"></div></div>
+              <div class="gate-score" id="scoreAparigraha">—</div>
+              <div class="gate-icon" id="iconAparigraha">○</div>
+            </div>
+          </div>
+
+          <div id="explanationsDiv" class="explanation-list" style="display:none">
+            <ul id="explanationList"></ul>
+          </div>
+
+          <div id="missingDiv" style="font-size:0.8rem;color:#64748b;margin-top:0.5rem"></div>
+        </div>
+      </div>
+
+      <!-- Spec panel -->
+      <div class="spec-panel">
+        <div style="font-size:0.9rem;font-weight:600;color:#94a3b8;margin-bottom:0.75rem">
+          Assessment Specification (auto-populated from chat)
+        </div>
+        <div class="spec-grid">
+          <div class="spec-field">
+            <label for="f_cohort">Cohort</label>
+            <input type="text" id="f_cohort" placeholder="nz-smokers-40-65">
+          </div>
+          <div class="spec-field">
+            <label for="f_scope">Scope</label>
+            <input type="text" id="f_scope" placeholder="population_mortality">
+          </div>
+          <div class="spec-field">
+            <label for="f_clinician_id">Clinician ID</label>
+            <input type="text" id="f_clinician_id" placeholder="Dr. Smith">
+          </div>
+          <div class="spec-field">
+            <label for="f_consent_record_id">Consent Record ID</label>
+            <input type="text" id="f_consent_record_id" placeholder="(auto-generated)">
+          </div>
+          <div class="spec-field">
+            <label for="f_model_version">Model Version</label>
+            <input type="text" id="f_model_version" placeholder="cox-ph-v2.1">
+          </div>
+          <div class="spec-field">
+            <label for="f_confidence">Confidence (0-1)</label>
+            <input type="number" id="f_confidence" placeholder="0.75" step="0.01" min="0" max="1">
+          </div>
+          <div class="spec-field">
+            <label for="f_model_count">Model Count</label>
+            <input type="number" id="f_model_count" placeholder="2" min="1">
+          </div>
+          <div class="spec-field">
+            <label for="f_population_size">Population Size</label>
+            <input type="number" id="f_population_size" placeholder="0" min="0">
+          </div>
+          <div class="spec-field">
+            <label for="f_regulatory_jurisdiction">Regulatory Jurisdiction</label>
+            <input type="text" id="f_regulatory_jurisdiction" placeholder="nz-privacy">
+          </div>
+          <div class="spec-field">
+            <label for="f_equity_flag">Equity Flag</label>
+            <input type="text" id="f_equity_flag" placeholder="age-stratified">
+          </div>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="result-panel" id="resultPanel">
+        <div style="font-size:0.9rem;font-weight:600;color:#94a3b8;margin-bottom:0.75rem">Assessment Result</div>
+        <div id="resultContent"></div>
+      </div>
+    </div>
+    <!-- END ADVISOR PANEL -->
+
+    <details>
+    <summary>API Documentation and Reference</summary>
 
     <!-- Status row -->
     <div class="section-title">Service Status</div>
@@ -444,7 +685,208 @@
 
     </div>
 
+    </details>
+
   </main>
+
+  <script>
+    let advisorSession = 'sess-' + Date.now();
+    let advisorHistory = [];
+    let currentFields = {};
+
+    async function sendMessage() {
+      const input = document.getElementById('chatInput');
+      const msg = input.value.trim();
+      if (!msg) return;
+
+      input.value = '';
+      addMessage('user', msg);
+      advisorHistory.push({ role: 'user', content: msg });
+
+      try {
+        const res = await fetch('/api/advisor/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: advisorSession, message: msg, history: advisorHistory.slice(-8) }),
+        });
+        const data = await res.json();
+
+        addMessage('advisor', data.response);
+        advisorHistory.push({ role: 'assistant', content: data.response });
+
+        if (data.gateSimulation) updateGateSimulation(data.gateSimulation);
+        if (data.completeness) updateCompleteness(data.completeness);
+        if (data.fields) updateSpecFields(data.fields);
+        if (data.explanations && data.explanations.length) updateExplanations(data.explanations);
+        else clearExplanations();
+        if (data.consentGenerated && data.fields && data.fields.consent_record_id) {
+          document.getElementById('f_consent_record_id').value = data.fields.consent_record_id;
+        }
+        currentFields = data.fields || currentFields;
+
+        const needConsent = data.fields && data.fields.cohort && data.fields.scope &&
+          data.fields.clinician_id && !data.consentGenerated;
+        document.getElementById('btnConsent').style.display = needConsent ? 'block' : 'none';
+
+        updateSubmitButton(data.completeness, data.gateSimulation);
+      } catch (e) {
+        addMessage('system', 'Connection error — check server logs');
+        console.error(e);
+      }
+    }
+
+    function addMessage(role, content) {
+      const area = document.getElementById('chatMessages');
+      const div = document.createElement('div');
+      div.className = 'msg ' + role;
+      div.textContent = content;
+      area.appendChild(div);
+      area.scrollTop = area.scrollHeight;
+    }
+
+    function updateGateSimulation(sim) {
+      const el = document.getElementById('compositeScore');
+      const verdict = document.getElementById('compositeVerdict');
+      const score = sim.composite_score != null ? sim.composite_score : 0;
+      el.textContent = score.toFixed(2);
+      el.className = 'score-num ' + (sim.pass ? 'pass' : 'block');
+      verdict.textContent = sim.pass ? 'WOULD PASS' : 'WOULD BLOCK';
+      verdict.style.color = sim.pass ? '#10b981' : '#ef4444';
+
+      const gates = ['Ahimsa', 'Satya', 'Asteya', 'Brahmacharya', 'Aparigraha'];
+      for (const g of gates) {
+        const gKey = g.toLowerCase();
+        const gData = sim.gates && sim.gates[gKey];
+        if (!gData) continue;
+        const fill = document.getElementById('gate' + g);
+        const scoreEl = document.getElementById('score' + g);
+        const icon = document.getElementById('icon' + g);
+        const pct = Math.round((gData.score || 0) * 100);
+        fill.style.width = pct + '%';
+        fill.className = 'gate-fill ' + (gData.pass ? 'pass' : (pct >= 60 ? 'marginal' : 'block'));
+        scoreEl.textContent = (gData.score || 0).toFixed(2);
+        icon.textContent = gData.pass ? 'Y' : 'N';
+      }
+    }
+
+    function updateCompleteness(c) {
+      document.getElementById('progressLabel').textContent =
+        'Completeness: ' + c.score + '% — ' + c.state;
+      document.getElementById('progressFill').style.width = c.score + '%';
+    }
+
+    function updateSpecFields(fields) {
+      const map = {
+        cohort: 'f_cohort', scope: 'f_scope', clinician_id: 'f_clinician_id',
+        consent_record_id: 'f_consent_record_id', model_version: 'f_model_version',
+        confidence: 'f_confidence', model_count: 'f_model_count',
+        population_size: 'f_population_size',
+        regulatory_jurisdiction: 'f_regulatory_jurisdiction', equity_flag: 'f_equity_flag',
+      };
+      for (const [field, id] of Object.entries(map)) {
+        const el = document.getElementById(id);
+        if (el && fields[field] !== undefined && fields[field] !== null) {
+          el.value = fields[field];
+          el.classList.add('filled');
+        }
+      }
+    }
+
+    function updateExplanations(explanations) {
+      const div = document.getElementById('explanationsDiv');
+      const list = document.getElementById('explanationList');
+      list.innerHTML = explanations.map(function(e) { return '<li>' + e + '</li>'; }).join('');
+      div.style.display = 'block';
+    }
+
+    function clearExplanations() {
+      document.getElementById('explanationsDiv').style.display = 'none';
+    }
+
+    function updateSubmitButton(completeness, sim) {
+      const btn = document.getElementById('btnSubmit');
+      const ready = completeness && (completeness.state === 'READY' || completeness.state === 'SUBMIT_NOW');
+      const wouldPass = sim && sim.pass;
+      btn.disabled = false;
+      btn.className = 'btn-submit' + (ready && wouldPass ? ' ready' : '');
+    }
+
+    async function generateConsent() {
+      try {
+        const res = await fetch('/api/advisor/consent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: advisorSession }),
+        });
+        const data = await res.json();
+        if (data.consent_record_id) {
+          document.getElementById('f_consent_record_id').value = data.consent_record_id;
+          document.getElementById('f_consent_record_id').classList.add('filled');
+          addMessage('system', 'Consent record generated: ' + data.consent_record_id);
+          document.getElementById('btnConsent').style.display = 'none';
+          currentFields.consent_record_id = data.consent_record_id;
+        } else {
+          addMessage('system', 'Consent error: ' + (data.error || 'unknown'));
+        }
+      } catch (e) {
+        addMessage('system', 'Consent generation failed: ' + e.message);
+      }
+    }
+
+    async function submitAssessment() {
+      const fieldIds = {
+        cohort: 'f_cohort', scope: 'f_scope', clinician_id: 'f_clinician_id',
+        consent_record_id: 'f_consent_record_id', model_version: 'f_model_version',
+        confidence: 'f_confidence', model_count: 'f_model_count',
+        population_size: 'f_population_size',
+        regulatory_jurisdiction: 'f_regulatory_jurisdiction', equity_flag: 'f_equity_flag',
+      };
+      const body = Object.assign({}, currentFields);
+      for (const [field, id] of Object.entries(fieldIds)) {
+        const v = document.getElementById(id) && document.getElementById(id).value;
+        if (v) {
+          if (field === 'confidence') body[field] = parseFloat(v);
+          else if (field === 'model_count' || field === 'population_size') body[field] = parseInt(v) || 0;
+          else body[field] = v;
+        }
+      }
+
+      addMessage('system', 'Submitting assessment...');
+      document.getElementById('btnSubmit').disabled = true;
+
+      try {
+        const res = await fetch('/api/v1/assess', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+
+        const panel = document.getElementById('resultPanel');
+        const content = document.getElementById('resultContent');
+        panel.style.display = 'block';
+
+        if (res.ok && data.status === 'ASSESSMENT_RECORDED') {
+          content.innerHTML = '<div class="result-pass">ASSESSMENT RECORDED</div>' +
+            '<div style="margin-top:0.75rem;font-size:0.85rem">' +
+            'Constitutional Score: <strong>' + (data.constitutional_score || 0).toFixed(3) + '</strong><br>' +
+            (data.kaitiaki ? 'Receipt: ' + data.kaitiaki.receipt_id : '') +
+            '</div>';
+          addMessage('advisor', 'Assessment recorded. Constitutional score: ' + (data.constitutional_score || 0).toFixed(3));
+        } else {
+          const reason = data.blocked_by ? data.blocked_by.join('; ') : (data.error || 'Constitutional gate blocked');
+          content.innerHTML = '<div class="result-block">BLOCKED: ' + reason + '</div>';
+          addMessage('advisor', 'Assessment blocked. Check gate simulation for what needs to change.');
+        }
+
+        panel.scrollIntoView({ behavior: 'smooth' });
+      } catch (e) {
+        addMessage('system', 'Submission failed: ' + e.message);
+      }
+
+      document.getElementById('btnSubmit').disabled = false;
+    }
+  </script>
 
   <footer>
     <span class="footer-brand">Axiom Intelligence Ltd · Turangawaewae Protocol</span>

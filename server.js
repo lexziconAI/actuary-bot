@@ -10,28 +10,16 @@
 
 import express from 'express';
 import { createHash } from 'crypto';
-import { createRequire } from 'module';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 import { generateConsentRecordId, validateConsentRecord, consentSummary } from './constitutional/consent-protocol.js';
 import { runAllGates } from './constitutional/yamas-gates.js';
 import { insertRiskAssessment, upsertConsentRecord, logConstitutionalVerdict } from './storage/actuary-store.js';
-
-// Ed25519 Kaitiaki transport middleware — replaces SHA-256 receipt helper
-// CJS module imported via createRequire (ESM ↔ CJS bridge)
-const require = createRequire(import.meta.url);
-const { kaitiakiExpressMiddleware } = require('./kaitiaki/middleware.cjs');
-const { chainReceipt, extractParentReceipt, buildChainHeaders } = require('./kaitiaki/chain.cjs');
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
+import { handleAdvisorTurn, handleConsentGeneration, clearSession } from './src/advisor/advisor-chat.js';
+import { explainGates } from './src/advisor/gate-explainer.js';
 
 const app = express();
 const PORT = process.env.PORT || 3090;
 
-// Kaitiaki must be FIRST — seals every JSON response at transport layer
-app.use(kaitiakiExpressMiddleware);
 app.use(express.json());
-app.use(express.static(join(__dirname, 'public')));
 
 // ---------------------------------------------------------------------------
 // Kaitiaki receipt helper — stamps every response
@@ -223,20 +211,11 @@ app.post('/api/v1/drug_discovery_ingest', (req, res) => {
   }
 
   // Phase 1: acknowledge receipt, no actuarial computation yet
-  // Chain of custody: link to the DD receipt if caller provided one
-  const ddParentReceiptId = extractParentReceipt(req);
-  const ddLocalReceipt = {
-    receipt_id: `KT-AB-DD-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
-    timestamp: new Date().toISOString(),
-  };
-  const ddChainedReceipt = chainReceipt(ddLocalReceipt, ddParentReceiptId);
-
   res.json({
     status: 'INGEST_RECEIVED',
     candidate_count: candidates.length,
     message: 'Drug Discovery candidates received. Actuarial integration engine pending Phase 2.',
     constitutional_score: verdict.constitutional_score,
-    chained_receipt: ddChainedReceipt,
     kaitiaki: kaitiakiReceipt({ endpoint: '/api/v1/drug_discovery_ingest', consent_record_id, constitutional_score: verdict.constitutional_score, pass: true }),
   });
 });
@@ -275,14 +254,6 @@ app.post('/api/v1/dr_bot_ingest', (req, res) => {
   // SCAR-053 note: adversarial_score → confidence mapping confirmed here.
   // Missing: correct: boolean ground truth. Pour 3 architecture waits on
   // Dr Bot adding a prediction_outcome_resolution endpoint (Phase 2 roadmap).
-  // Chain of custody: link to the Dr Bot receipt if caller provided one
-  const drBotParentReceiptId = extractParentReceipt(req);
-  const drBotLocalReceipt = {
-    receipt_id: `KT-AB-DRBOT-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
-    timestamp: new Date().toISOString(),
-  };
-  const drBotChainedReceipt = chainReceipt(drBotLocalReceipt, drBotParentReceiptId);
-
   res.json({
     status: 'DR_BOT_SIGNAL_RECEIVED',
     dissent_id,
@@ -290,9 +261,67 @@ app.post('/api/v1/dr_bot_ingest', (req, res) => {
     derived_confidence: ctx.confidence,
     message: 'Dr Bot signal received. Ground-truth outcome resolution pending SCAR-053 / Pour 3 Phase 2.',
     constitutional_score: verdict.constitutional_score,
-    chained_receipt: drBotChainedReceipt,
     kaitiaki: kaitiakiReceipt({ endpoint: '/api/v1/dr_bot_ingest', consent_record_id, constitutional_score: verdict.constitutional_score, pass: true }),
   });
+});
+
+// ---------------------------------------------------------------------------
+// Route: POST /api/advisor/chat
+// Assessment Advisor conversational interface — builds spec through dialogue
+// ---------------------------------------------------------------------------
+app.post('/api/advisor/chat', async (req, res) => {
+  const { sessionId, message, history } = req.body ?? {};
+  if (!message) return res.status(400).json({ error: 'message required' });
+  try {
+    const result = await handleAdvisorTurn(sessionId || 'default', message, history || []);
+    res.json(result);
+  } catch (e) {
+    console.error('[Advisor] Chat error:', e);
+    res.status(500).json({ error: 'advisor_error', message: e.message });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Route: POST /api/advisor/consent
+// Generate consent record from accumulated session fields
+// ---------------------------------------------------------------------------
+app.post('/api/advisor/consent', async (req, res) => {
+  const { sessionId } = req.body ?? {};
+  try {
+    const result = await handleConsentGeneration(sessionId || 'default');
+    if (result.error) return res.status(400).json(result);
+    // Persist consent record to DB
+    try {
+      upsertConsentRecord({
+        consent_record_id: result.consent_record_id,
+        cohort: result.cohort,
+        scope: result.scope,
+        clinician_id: result.clinician_id,
+      });
+    } catch (dbErr) {
+      console.warn('[Advisor] Consent DB persist failed (non-fatal):', dbErr.message);
+    }
+    res.json(result);
+  } catch (e) {
+    console.error('[Advisor] Consent error:', e);
+    res.status(500).json({ error: 'consent_error', message: e.message });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Route: POST /api/v1/simulate
+// Gate simulation without persistence — preview constitutional score
+// ---------------------------------------------------------------------------
+app.post('/api/v1/simulate', (req, res) => {
+  const ctx = req.body ?? {};
+  try {
+    const result = runAllGates(ctx);
+    const flatGates = result.yamas || {};
+    const explanations = explainGates(flatGates, ctx);
+    res.json({ simulation: true, persisted: false, ...result, explanations });
+  } catch (e) {
+    res.status(400).json({ error: 'simulation_error', message: e.message });
+  }
 });
 
 // ---------------------------------------------------------------------------
